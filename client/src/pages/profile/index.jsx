@@ -8,7 +8,7 @@ import { BsFillTrash3Fill } from "react-icons/bs";
 import { LuUpload } from "react-icons/lu";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { UPDATE_PROFILE_ROUTE } from "@/utils/constants";
+import { ADD_PROFILE_IMAGE_ROUTE, HOST, REMOVE_PROFILE_IMAGE_ROUTE, UPDATE_PROFILE_ROUTE } from "@/utils/constants";
 import { apiClient } from "@/lib/api-client";
 import { toast } from "sonner";
 
@@ -29,18 +29,17 @@ const Profile = () => {
       setFirstName(userInfo.firstName);
       setLastName(userInfo.lastName);
       setSelectedColor(userInfo.color);
-      setImage(image);
+    }
+    
+    if(userInfo.image){
+      setImage(`${HOST}/${userInfo.image}`);
     }
   }, [userInfo])
 
 
   const validateProfile = () => {
-    if (!firstName) {
-      toast.error("First Name is required.");
-      return false;
-    }
-    if (!lastName) {
-      toast.error("Last Name is required.");
+    if (!firstName || !lastName) {
+      toast.error("First & Last name are required.");
       return false;
     }
     return true;
@@ -52,7 +51,7 @@ const Profile = () => {
       try {
         const response = await apiClient.post(
           UPDATE_PROFILE_ROUTE,
-          { firstName, lastName, color: selectedColor, image },
+          { firstName, lastName, color: selectedColor },
           { withCredentials: true }
         );
         if (response.status === 200 && response.data) {
@@ -72,7 +71,7 @@ const Profile = () => {
     if (userInfo.profileSetup) {
       navigate("/chat");
     } else {
-      toast.error("Plrease setup the profile")
+      toast.error("Please, First setup the profile")
     }
   }
 
@@ -80,18 +79,42 @@ const Profile = () => {
     fileInputRef.current.click();
   };
 
-  const handleImageChange = (event) => {
+  const handleImageChange = async (event) => {
     const file = event.target.files[0];
-    console.log(file)
+    console.log({ file })
+
     if (file) {
+      const formData = new FormData();
+      formData.append("profile-image", file);
+      const response = await apiClient.post(ADD_PROFILE_IMAGE_ROUTE, formData, { withCredentials: true });
+
+      if (response.status === 200 && response.data.image) {
+        setUserInfo({ ...userInfo, image: response.data.image });
+        toast.success("Image uploaded successfully");
+      }
+
       // alert(`File uploaded: ${URL.createObjectURL(file)}`);
-      setImage(URL.createObjectURL(file)); 
-      console.log(URL.createObjectURL(file));
+      // setImage(URL.createObjectURL(file));
+      // console.log(URL.createObjectURL(file));
     }
   };
-  
 
-  const handleDeleteImage = async () => { };
+
+  const handleDeleteImage = async () => { 
+    try {
+      const res = await apiClient.delete(REMOVE_PROFILE_IMAGE_ROUTE, {
+        withCredentials: true,
+      });
+
+      if(res.status === 200 ){
+        setUserInfo({...userInfo, image: null});
+        toast.success("Image deleted successfully");
+        setImage(null);
+      }
+    } catch (error) {
+      console.log(error)
+    }
+  };
 
 
   return (
@@ -105,13 +128,13 @@ const Profile = () => {
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
             onClick={handleFileInputClick}
-            >
+          >
             <Avatar className="h-32 w-32 md:w-48 md:h-48 rounded-full overflow-hidden">
               {image ? (
                 <AvatarImage
                   src={image}
                   alt="profile"
-                  className="object-cover w-full h-full bg-black" />
+                  className="object-cover w-full h-full bg-black " />
               ) : (
                 <div className={`uppercase h-32 w-32 md:w-48 md:h-48 text-5xl border flex items-center justify-center rounded-full ${getColor(selectedColor)}`}>
                   {firstName

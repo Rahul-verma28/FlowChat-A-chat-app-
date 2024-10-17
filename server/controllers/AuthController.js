@@ -1,5 +1,6 @@
 import jwt from "jsonwebtoken";
 import User from "../models/UserModel.js";
+import { renameSync, unlinkSync } from "fs"
 
 const maxAge = 3 * 24 * 60 * 60 * 60;
 
@@ -11,7 +12,6 @@ export const signup = async (req, res, next) => {
     try {
 
         const { email, password } = req.body;
-
         if (!email || !password) {
             return res.status(400).send({ message: 'Email and Password both are required.' });
         }
@@ -98,11 +98,11 @@ export const getUserInfo = async (req, res, next) => {
 }
 
 
-export const updateProfile = async (request, response, next) => {
-    const { userId } = request;
-    const { firstName, lastName, color, image } = request.body;
+export const updateProfile = async (req, res, next) => {
+    const { userId } = req;
+    const { firstName, lastName, color } = req.body;
     if (!firstName || !lastName) {
-        return response
+        return res
             .status(400)
             .send("Firstname and lastname is required.");
     }
@@ -113,22 +113,92 @@ export const updateProfile = async (request, response, next) => {
                 firstName,
                 lastName,
                 color,
-                image,
                 profileSetup: true,
             },
             { new: true, runValidators: true }
         );
-        return response.status(200).json({
+        return res.status(200).json({
             id: userData.id,
             email: userData.email,
             profileSetup: userData.profileSetup,
             firstName: userData.firstName,
             lastName: userData.lastName,
-            image: userData.image,
             color: userData.color,
         });
     } catch (error) {
         console.log({ error });
-        return response.status(500).send("Internal Server Error");
+        return res.status(500).send("Internal Server Error");
     }
 };
+
+export const addProfileImage = async (req, res, next) => {
+    try {
+        if (!req.file) {
+            return res.status(400).send("File is required");
+        }
+
+        const date = Date.now();
+        
+        // Ensure both file path and originalname are available
+        if (!req.file.path || !req.file.originalname) {
+            return res.status(500).send("File upload failed");
+        }
+
+        // Construct the file path and rename the uploaded file
+        const fileName = `uploads/profiles/${date}_${req.file.originalname}`;
+        renameSync(req.file.path, fileName);
+
+        const updatedUser = await User.findByIdAndUpdate(
+            req.userId,
+            { image: fileName },
+            { new: true, runValidators: true }
+        );
+
+        return res.status(200).json({
+            image: updatedUser.image,
+        });
+    }
+    catch (error) {
+        console.log({ error });
+        return res.status(500).send("Internal Server Error");
+    }
+};
+
+export const removeProfileImage = async (req, res, next) => {
+
+    try {
+        const {userId} = req;
+        const user = await User.findById(userId);
+
+        if (!user) {
+            return res.status(404).send("User not found.")
+        }
+
+        if(user.image){
+            unlinkSync(user.image);
+        }
+
+        user.image = null;
+        await user.save();
+
+        return res.status(200).send("Profile removed successfully");
+    }
+    catch (error) {
+        console.log({ error });
+        return res.status(500).send("Internal Server Error");
+    }
+}
+
+
+export const logOut = async (req, res, next) => {
+
+    try {
+        res.cookie("jwt", "", {maxAge:1, secure : true, sameSite: "None"})
+
+        return res.status(200).send("Logged out successfully");
+    }
+    catch (error) {
+        console.log({ error });
+        return res.status(500).send("Internal Server Error");
+    }
+}
