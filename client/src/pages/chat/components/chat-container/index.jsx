@@ -7,8 +7,8 @@ const Chatcontaier = () => {
   return (
     <div className='fixed top-0 h-screen w-screen bg-black flex flex-col md:static md:flex-1'>
       <ChatHeader/>
-      <MessageBar />
       <MessageContainer/>
+      <MessageBar />
     </div>
   )
 }

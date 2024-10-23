@@ -19,9 +19,11 @@ import { HOST, SEARCH_CONTACTS_ROUTES } from "@/utils/constants";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { useAppStore } from "@/store";
 
 
 const NewDM = () => {
+    const { setSelectedChatType, setSelectedChatData } = useAppStore()
     const [openNewContactModal, setOpenNewContactModal] = useState(false);
     const [searchedContacts, setSearchedContacts] = useState([]);
 
@@ -45,8 +47,10 @@ const NewDM = () => {
         }
     };
 
-    const selectNewContact =(contact)=>{
+    const selectNewContact = (contact) => {
         setOpenNewContactModal(false);
+        setSelectedChatType('contact');
+        setSelectedChatData(contact);
         setSearchedContacts([])
         console.log(contact);
     }
@@ -81,8 +85,8 @@ const NewDM = () => {
                     <ScrollArea className="h-[250px] ">
                         <div className="flex flex-col gap-5">
                             {searchedContacts.map((contact) => (
-                                <div key={contact._id} className="flex gap-3 items-center cursor-pointer" 
-                                onClick={()=> selectNewContact(contact)}>
+                                <div key={contact._id} className="flex gap-3 items-center cursor-pointer"
+                                    onClick={() => selectNewContact(contact)}>
                                     <Avatar className="h-12 w-12 rounded-full overflow-hidden">
                                         {contact.image ? (
                                             <AvatarImage
@@ -100,9 +104,9 @@ const NewDM = () => {
                                     </Avatar>
                                     <div className="flex flex-col">
                                         <span>
-                                            {contact.firstName && contact.email?
-                                            `${contact.firstName} ${contact.lastName}` :
-                                            contact.email}
+                                            {contact.firstName && contact.email ?
+                                                `${contact.firstName} ${contact.lastName}` :
+                                                contact.email}
                                         </span>
                                         <span className="text-xs">{contact.email}</span>
                                     </div>

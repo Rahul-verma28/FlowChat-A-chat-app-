@@ -11,7 +11,7 @@ import { HOST } from "@/utils/constants";
 
 const Chat = () => {
 
-  const { userInfo } = useAppStore();
+  const { userInfo, selectedChatType } = useAppStore();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -24,8 +24,8 @@ const Chat = () => {
   return <>
     <div className="flex h-screen text-white overflow-hidden max-w-[100vw]">
       <ConatactContainer />
-      {/* <EmptyChatContainer /> */}
-      <Chatcontaier />
+      {selectedChatType === undefined ?
+        <EmptyChatContainer /> : <Chatcontaier />}
     </div>
   </>;
 };
